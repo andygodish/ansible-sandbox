@@ -21,11 +21,3 @@ docker run \
   -v ~/.ssh:/root/.ssh:ro \
   --rm ansible:latest ansible-playbook -i inventory/rke2-cluster/hosts.ini playbooks/update.yml
 ```
-
-docker run \
-  -v "${PWD}":/work:ro \
-  -v ~/.ansible/roles:/root/.ansible/roles \
-  -v ~/.ssh:/root/.ssh:ro \
-  ansible:latest ansible -i inventory/local/hosts.ini -a "hostname"
-
-i-0be9ce3655b4d5802 i-07e29c76fdb67ceb7 i-0435fcc968fa69424
