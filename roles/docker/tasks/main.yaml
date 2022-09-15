@@ -1,0 +1,32 @@
+---
+- name: Remove older versions of docker.
+  apt:
+    name: docker
+    state: absent
+  when: ansible_facts.os_family == "Debian"
+
+- name: Remove older versions of docker-engine.
+  apt:
+    name: docker-engine
+    state: absent
+  when: ansible_facts.os_family == "Debian"
+
+- name: Remove older versions of docker.io.
+  apt:
+    name: docker.io
+    state: absent
+  when: ansible_facts.os_family == "Debian"
+
+- name: Remove older versions of containerd.
+  apt:
+    name: containerd
+    state: absent
+  when: ansible_facts.os_family == "Debian"
+
+- name: Remove older versions of runc.
+  apt:
+    name: runc
+    state: absent
+  when: ansible_facts.os_family == "Debian"
+
+

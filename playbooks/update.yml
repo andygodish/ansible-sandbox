@@ -1,0 +1,10 @@
+---
+- hosts: "*"
+  become: true
+  gather_facts: false 
+	tasks: 
+	- name: DNF update the system
+    dnf:
+      name:  "*"
+      state: latest
+    when: ansible_facts['os_family'] == 'RedHat' and ansible_facts  ['distribution_major_version'] >= '8'
