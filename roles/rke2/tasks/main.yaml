@@ -1,0 +1,100 @@
+---
+- name: Configure a unique hostname (from inventory)
+  hostname:  
+    name: '{{ node_name }}'
+  when: (node_name is defined) and (node_name|length > 0)
+
+- name: Disable firewalld
+  service: 
+    name: firewalld
+    state: stopped
+    enabled: False
+  when: ansible_facts.os_family == "RedHat"
+
+- name: Create NetworkManager configuration file
+  copy: 
+    dest: "/etc/NetworkManager/conf.d/rke2-canal.conf"
+    content: | 
+      [keyfile]
+      unmanaged-devices=interface-name:cali*;interface-name:flannel*
+
+- name: Reload NetworkManager service
+  service: 
+    name: NetworkManager
+    state: reloaded
+
+# Config
+- name: Does the /etc/rancher/rke2 dir exist?
+  stat:
+    path: /etc/rancher/rke2
+  register: rke2_directory
+
+- name: Create the /etc/rancher/rke2 config dir
+  file:
+    path: /etc/rancher/rke2
+    state: directory
+    recurse: yes
+  when: not rke2_directory.stat.exists
+
+- name: Does the /etc/rancher/rke2/config.yaml file exist?
+  stat:
+    path: /etc/rancher/rke2/config.yaml
+  register: previous_rke2_config
+
+- name: Create config file
+  file:
+    path: /etc/rancher/rke2/config.yaml
+    state: touch
+    mode: "0640"
+    owner: root
+    group: root
+  when: not previous_rke2_config.stat.exists
+
+- name: Read previous_rke2_config
+  slurp:
+    src: /etc/rancher/rke2/config.yaml
+  register: full_orig_rke2_config
+  when: previous_rke2_config.stat.exists
+
+- name: Decode contents of slurp
+  set_fact:
+    orig_rke2_config: "{{ full_orig_rke2_config['content'] | b64decode }}"
+  when: previous_rke2_config.stat.exists
+
+# Node Labels
+
+- name: get rke2_config node-labels
+  set_fact:
+    rke2_config_node_labels: "{{ rke2_config['node-label'] | default([]) }}"
+
+- name: get host var node-labels
+  set_fact:
+    host_var_node_labels: "{{ node_labels | default([]) }}"
+
+- name: Combine rke2_config node labels and hostvar node labels
+  set_fact:
+    all_node_labels: "{{ rke2_config_node_labels + host_var_node_labels }}"
+  changed_when: false
+
+- name: Add node labels to rke2_config
+  ansible.utils.update_fact:
+    updates:
+      - path: rke2_config["node-label"]
+        value: "{{ all_node_labels }}"
+  register: updated_rke2_config
+  changed_when: false
+
+- name: Update rke2_config to take value of updated_rke2_config  # noqa no-handler
+  set_fact:
+    rke2_config: "{{ updated_rke2_config.rke2_config }}"
+  when: updated_rke2_config.changed
+
+- name: Drop in final /etc/rancher/rke2/config.yaml
+  copy:
+    content: "{{ rke2_config | to_nice_yaml(indent=0) }}"
+    dest: /etc/rancher/rke2/config.yaml
+    mode: "0640"
+    owner: root
+    group: root
+    backup: yes
+  when: not previous_rke2_config.stat.exists or (tmp_sha1 != previous_rke2_config.stat.checksum)

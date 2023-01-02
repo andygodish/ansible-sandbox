@@ -21,3 +21,7 @@ docker run \
   -v ~/.ssh:/root/.ssh:ro \
   --rm ansible:latest ansible-playbook -i inventory/rke2-cluster/hosts.ini playbooks/update.yml
 ```
+
+```
+docker run -v ${PWD}:/work:ro -v ${PWD}/roles:/root/.ansible/roles -v /tmp/.test-ssh:/root/.ssh --rm ansible-sandbox:dev ansible -m ping all -vvv
+```

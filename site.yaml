@@ -1,6 +1,8 @@
 ---
-- hosts: ubuntu
+- hosts: vms
   gather_facts: yes
   become: yes
   roles: 
-  - role: docker
+  - bguerel.update_reboot
+  # - geerlingguy.docker
+
